@@ -41,6 +41,7 @@
 //! ```
 
 use std::any::Any;
+use std::io::Read;
 
 /// A TaggedJsonAsset is the base trait that must be implemented by any assets you want to make.
 ///
@@ -64,7 +65,7 @@ impl Default for TaggedJsonAssetCreationHandler {
 /// Allows TaggedJsonAssetCreationHandler to create JSON assets. This *requires* nightly.
 #[cfg(nightly)]
 impl crate::AssetCreationHandler for TaggedJsonAssetCreationHandler {
-    fn create_asset<R: std::io::Read>(&mut self, reader: R) -> Option<Box<dyn Any>> {
+    fn create_asset(&mut self, _: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
         let any: Box<dyn TaggedJsonAsset> = serde_json::from_reader(reader).ok()?;
         Some(any)
     }

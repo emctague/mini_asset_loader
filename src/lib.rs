@@ -22,6 +22,11 @@
 //! For a simple implementation of this, which provides a helpful example of the asset system in use,
 //! (but which, unfortunately, requires nightly rust), see the [asset] module.
 //!
+//! The [ExtensionMappedAssetCreationHandler] is a builtin type that allows one to map different file
+//! extensions on the asset identifier string to different AssetCreationHandlers. For example, one could use
+//! the builtin `asset` module's creation handler for `.json`-based types, and use a separate mesh creation
+//! handler for `.dae` types.
+//!
 //! ## Features
 //!
 //! - `zip` - Provides the [loaders::zip] module, containing a ZIP file loader.
@@ -35,12 +40,70 @@ pub mod loaders;
 
 pub use any_handle::AnyHandle;
 use std::any::Any;
+use std::collections::HashMap;
 use std::io::Read;
+use std::path::Path;
 
 /// An AssetCreationHandler is a delegate that handles the creation (usually deserialization)
 /// and allocation of assets from an input byte stream.
+///
+/// You could compose multiple AssetCreationHandlers by creating a handler that maps to other
+/// handlers based on the identifier's file extension or magic numbers in the input stream.
+/// See [ExtensionMappedAssetCreationHandler].
 pub trait AssetCreationHandler {
-    fn create_asset<R: Read>(&mut self, reader: R) -> Option<Box<dyn Any>>;
+    fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>>;
+}
+
+/// Maps to multiple [AssetCreationHandler]s based on the file extension of the asset.
+///
+/// ## Example
+///
+/// ```
+/// # use std::any::Any;
+/// # use std::io::Read;
+/// # use mini_asset_loader::{AssetCreationHandler, ExtensionMappedAssetCreationHandler};
+/// # struct MyJsonHandler {}
+/// # impl AssetCreationHandler for MyJsonHandler {
+/// #     fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
+/// #         None
+/// #     }
+/// # }
+/// # struct MyMeshHandler {}
+/// # impl AssetCreationHandler for MyMeshHandler {
+/// #     fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
+/// #         None
+/// #     }
+/// # }
+/// let mut handler = ExtensionMappedAssetCreationHandler::new()
+///     .with("json", MyJsonHandler {}) // Use MyJsonHandler on .json files
+///     .with("dae", MyMeshHandler {}); // Use MyMeshHandler on .dae files
+/// ```
+pub struct ExtensionMappedAssetCreationHandler {
+    handlers: HashMap<String, Box<dyn AssetCreationHandler>>,
+}
+
+impl ExtensionMappedAssetCreationHandler {
+    /// Creates a default ExtensionMappedAssetCreationHandler.
+    /// Use [with] to add extensions.
+    pub fn new() -> Self {
+        ExtensionMappedAssetCreationHandler {
+            handlers: HashMap::default(),
+        }
+    }
+    /// Returns a version of this Handler with an additional child Handler.
+    pub fn with<T: AssetCreationHandler + 'static>(mut self, key: &str, handler: T) -> Self {
+        self.handlers.insert(key.to_string(), Box::new(handler));
+        self
+    }
+}
+
+impl AssetCreationHandler for ExtensionMappedAssetCreationHandler {
+    /// Handles extension-mapped asset creation.
+    fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
+        let ext = Path::new(identifier).extension()?.to_str()?;
+        let handler = self.handlers.get_mut(ext)?;
+        handler.create_asset(identifier, reader)
+    }
 }
 
 /// An AssetLoader loads an asset given its name, with help from an [AssetCreationHandler].

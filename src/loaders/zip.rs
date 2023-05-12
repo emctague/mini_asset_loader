@@ -41,7 +41,10 @@ where
     R: Read + Seek,
 {
     fn load_asset(&self, handler: &mut Handler, identifier: &str) -> Option<AnyHandle<dyn Any>> {
-        let res = handler.create_asset(self.archive.borrow_mut().by_name(identifier).ok()?)?;
+        let res = handler.create_asset(
+            identifier,
+            Box::new(self.archive.borrow_mut().by_name(identifier).ok()?),
+        )?;
 
         Some(AnyHandle::<dyn Any>::new(res))
     }
