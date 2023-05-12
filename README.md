@@ -12,13 +12,16 @@ A simple asset type based on `serde_json` and type tags is provided in the `asse
 
 ## Example
 
-This example makes use of the `asset` feature, which only works on nightly rust. However, substituting this
-for a custom asset type will work in stable rust.
+This example makes use of the `asset` feature. This feature provides a simple Tagged JSON
+asset type, which only works on nightly rust. However, substituting this for a custom asset
+type will work in stable rust.
 
 ```rust
 use serde::{Serialize, Deserialize};
 use mini_asset_loader::loaders::{CachedLoader, CombinedLoader, DirectoryLoader};
 use mini_asset_loader::TypedAssetLoader;
+use mini_asset_loader::asset::{TaggedJsonAsset, TaggedJsonAssetCreationHandler};
+
 
 // Creating an asset type is as easy as making a Serializable/Deserializable struct...
 #[derive(Serialize, Deserialize)]
