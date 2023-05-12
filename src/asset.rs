@@ -8,6 +8,7 @@
 //!
 //! ```
 //! use serde::{Serialize, Deserialize};
+//! use mini_asset_loader::asset::{TaggedJsonAsset, TaggedJsonAssetCreationHandler};
 //! use mini_asset_loader::loaders::{CachedLoader, CombinedLoader, DirectoryLoader};
 //! use mini_asset_loader::TypedAssetLoader;
 //!
@@ -22,21 +23,20 @@
 //! impl TaggedJsonAsset for StringAsset {}
 //!
 //!
-//!
 //! // ...Then, when we want to *load* assets...
 //!
-//!     // We create our loader setup as usual...
-//!     let mut loader = CachedLoader::new(CombinedLoader::new()
-//!         .with(DirectoryLoader::new("assets/"))
-//!         .with(DirectoryLoader::new("/global_assets/")));
+//! // We create our loader setup as usual...
+//! let mut loader = CachedLoader::new(CombinedLoader::new()
+//!     .with(DirectoryLoader::new("assets/"))
+//!     .with(DirectoryLoader::new("/global_assets/")));
 //!
-//!     // Make a TaggedJsonAssetCreationHandler...
-//!     let mut handler = TaggedJsonAssetCreationHandler::default();
-//!     
-//!     // And we can load our assets!
-//!     if let Some(my_string_asset) = loader.load_typed_asset::<StringAsset>(&mut handler, "my_string_asset.json") {
-//!         println!("String asset loaded: {}", my_string_asset.read().value);
-//!     }
+//! // Make a TaggedJsonAssetCreationHandler...
+//! let mut handler = TaggedJsonAssetCreationHandler::default();
+//!
+//! // And we can load our assets!
+//! if let Some(my_string_asset) = loader.load_typed_asset::<StringAsset>(&mut handler, "my_string_asset.json") {
+//!     println!("String asset loaded: {}", my_string_asset.read().value);
+//! }
 //!
 //! ```
 
@@ -52,7 +52,7 @@ pub trait TaggedJsonAsset: Any {
 }
 
 /// An AssetCreationHandler that loads JSON-based assets that implement [TaggedJsonAsset].
-struct TaggedJsonAssetCreationHandler {}
+pub struct TaggedJsonAssetCreationHandler {}
 
 /// Provides a constructor for the handler.
 impl Default for TaggedJsonAssetCreationHandler {
