@@ -53,19 +53,13 @@ pub trait TaggedJsonAsset: Any {
 }
 
 /// An AssetCreationHandler that loads JSON-based assets that implement [TaggedJsonAsset].
+#[derive(Default)]
 pub struct TaggedJsonAssetCreationHandler {}
-
-/// Provides a constructor for the handler.
-impl Default for TaggedJsonAssetCreationHandler {
-    fn default() -> Self {
-        TaggedJsonAssetCreationHandler {}
-    }
-}
 
 /// Allows TaggedJsonAssetCreationHandler to create JSON assets. This *requires* nightly.
 #[cfg(nightly)]
 impl crate::AssetCreationHandler for TaggedJsonAssetCreationHandler {
-    fn create_asset(&mut self, _: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
+    fn create_asset(&mut self, _: &str, reader: &mut dyn Read) -> Option<Box<dyn Any>> {
         let any: Box<dyn TaggedJsonAsset> = serde_json::from_reader(reader).ok()?;
         Some(any)
     }

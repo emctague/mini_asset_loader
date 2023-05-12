@@ -51,7 +51,7 @@ use std::path::Path;
 /// handlers based on the identifier's file extension or magic numbers in the input stream.
 /// See [ExtensionMappedAssetCreationHandler].
 pub trait AssetCreationHandler {
-    fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>>;
+    fn create_asset(&mut self, identifier: &str, reader: &mut dyn Read) -> Option<Box<dyn Any>>;
 }
 
 /// Maps to multiple [AssetCreationHandler]s based on the file extension of the asset.
@@ -64,13 +64,13 @@ pub trait AssetCreationHandler {
 /// # use mini_asset_loader::{AssetCreationHandler, ExtensionMappedAssetCreationHandler};
 /// # struct MyJsonHandler {}
 /// # impl AssetCreationHandler for MyJsonHandler {
-/// #     fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
+/// #     fn create_asset(&mut self, identifier: &str, reader: &mut dyn Read) -> Option<Box<dyn Any>> {
 /// #         None
 /// #     }
 /// # }
 /// # struct MyMeshHandler {}
 /// # impl AssetCreationHandler for MyMeshHandler {
-/// #     fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
+/// #     fn create_asset(&mut self, identifier: &str, reader: &mut dyn Read) -> Option<Box<dyn Any>> {
 /// #         None
 /// #     }
 /// # }
@@ -78,6 +78,7 @@ pub trait AssetCreationHandler {
 ///     .with("json", MyJsonHandler {}) // Use MyJsonHandler on .json files
 ///     .with("dae", MyMeshHandler {}); // Use MyMeshHandler on .dae files
 /// ```
+#[derive(Default)]
 pub struct ExtensionMappedAssetCreationHandler {
     handlers: HashMap<String, Box<dyn AssetCreationHandler>>,
 }
@@ -99,7 +100,7 @@ impl ExtensionMappedAssetCreationHandler {
 
 impl AssetCreationHandler for ExtensionMappedAssetCreationHandler {
     /// Handles extension-mapped asset creation.
-    fn create_asset(&mut self, identifier: &str, reader: Box<dyn Read>) -> Option<Box<dyn Any>> {
+    fn create_asset(&mut self, identifier: &str, reader: &mut dyn Read) -> Option<Box<dyn Any>> {
         let ext = Path::new(identifier).extension()?.to_str()?;
         let handler = self.handlers.get_mut(ext)?;
         handler.create_asset(identifier, reader)

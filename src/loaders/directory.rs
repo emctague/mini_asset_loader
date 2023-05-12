@@ -36,10 +36,8 @@ impl<'a, Handler: AssetCreationHandler> AssetLoader<Handler> for DirectoryLoader
             return None;
         }
 
-        let res = handler.create_asset(
-            identifier,
-            Box::new(BufReader::new(File::open(new_path).ok()?)),
-        )?;
+        let res =
+            handler.create_asset(identifier, &mut BufReader::new(File::open(new_path).ok()?))?;
 
         Some(AnyHandle::<dyn Any>::new(res))
     }

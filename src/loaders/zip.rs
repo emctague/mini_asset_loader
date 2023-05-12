@@ -43,7 +43,7 @@ where
     fn load_asset(&self, handler: &mut Handler, identifier: &str) -> Option<AnyHandle<dyn Any>> {
         let res = handler.create_asset(
             identifier,
-            Box::new(self.archive.borrow_mut().by_name(identifier).ok()?),
+            &mut self.archive.borrow_mut().by_name(identifier).ok()?,
         )?;
 
         Some(AnyHandle::<dyn Any>::new(res))
