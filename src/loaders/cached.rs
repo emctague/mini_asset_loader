@@ -74,3 +74,24 @@ where
         )
     }
 }
+
+/// The ToCached trait makes it easy to turn any loader into a cached loader.
+/// Simply invoke to_cached() upon it.
+pub trait ToCached<Handler, T>
+where
+    T: AssetLoader<Handler>,
+    Handler: AssetCreationHandler,
+{
+    fn to_cached(self) -> CachedLoader<Handler, T>;
+}
+
+/// Blanket implementation of ToCached for all asset loaders.
+impl<Handler, T> ToCached<Handler, T> for T
+where
+    T: AssetLoader<Handler>,
+    Handler: AssetCreationHandler,
+{
+    fn to_cached(self) -> CachedLoader<Handler, T> {
+        CachedLoader::new(self)
+    }
+}

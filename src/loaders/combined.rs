@@ -8,6 +8,9 @@ use std::any::Any;
 ///
 /// When asked to load an asset, each child loader will be queried in-order for
 /// the same asset until one provides a value.
+///
+/// Note that it is often easier to simply use a Vec<Box<dyn AssetLoader<...>>>
+/// directly in the place of a CombinedLoader. It serves the same purpose.
 #[derive(Default)]
 pub struct CombinedLoader<Handler: AssetCreationHandler> {
     loaders: Vec<Box<dyn AssetLoader<Handler>>>,

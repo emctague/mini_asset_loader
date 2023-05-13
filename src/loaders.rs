@@ -7,7 +7,7 @@ pub mod directory;
 #[cfg(feature = "zip")]
 pub mod zip;
 
-pub use cached::CachedLoader;
+pub use cached::{CachedLoader, ToCached};
 pub use combined::CombinedLoader;
 pub use directory::DirectoryLoader;
 
