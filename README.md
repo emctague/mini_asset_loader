@@ -45,7 +45,7 @@ fn main() {
     ].to_cached();
 
     // Make a TaggedJsonAssetCreationHandler...
-    let mut handler = TaggedJsonAssetCreationHandler::default();
+    let mut handler = TaggedJsonAssetCreationHandler;
     
     // And we can load our assets!
     if let Some(my_string_asset) = loader.load_typed_asset::<StringAsset>(&mut handler, "my_string_asset.json") {

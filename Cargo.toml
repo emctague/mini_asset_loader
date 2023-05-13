@@ -1,6 +1,6 @@
 [package]
 name = "mini_asset_loader"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "A composable game asset-loading system."
 authors = ["Ethan McTague"]

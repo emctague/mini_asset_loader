@@ -33,7 +33,7 @@
 //! ].to_cached();
 //!
 //! // Make a TaggedJsonAssetCreationHandler...
-//! let mut handler = TaggedJsonAssetCreationHandler::default();
+//! let mut handler = TaggedJsonAssetCreationHandler;
 //!
 //! // And we can load our assets!
 //! if let Some(my_string_asset) = loader.load_typed_asset::<StringAsset>(&mut handler, "my_string_asset.json") {
@@ -55,8 +55,7 @@ pub trait TaggedJsonAsset: Any {
 }
 
 /// An AssetCreationHandler that loads JSON-based assets that implement [TaggedJsonAsset].
-#[derive(Default)]
-pub struct TaggedJsonAssetCreationHandler {}
+pub struct TaggedJsonAssetCreationHandler;
 
 /// Allows TaggedJsonAssetCreationHandler to create JSON assets. This *requires* nightly.
 #[cfg(nightly)]
