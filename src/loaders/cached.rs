@@ -7,34 +7,23 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 
 /// A Loader that caches assets that it loads, allowing for quick loading of
 /// the same, shared asset.
 ///
 /// Each asset will be held onto and reference-counted. Use [garbage_collect] to destroy
 /// any assets that are currently going entirely unused.
-pub struct CachedLoader<Handler, Loader>
-where
-    Handler: AssetCreationHandler,
-    Loader: AssetLoader<Handler>,
-{
+pub struct CachedLoader<Loader> {
     cache: RefCell<HashMap<Box<str>, AnyHandle<dyn Any>>>,
     loader: Loader,
-    _phantom: PhantomData<Handler>,
 }
 
-impl<Handler, Loader> CachedLoader<Handler, Loader>
-where
-    Handler: AssetCreationHandler,
-    Loader: AssetLoader<Handler>,
-{
+impl<Loader> CachedLoader<Loader> {
     /// Create a new CachedLoader that caches the results of the given child loader.
     pub fn new(child: Loader) -> Self {
         CachedLoader {
             cache: RefCell::new(HashMap::new()),
             loader: child,
-            _phantom: PhantomData,
         }
     }
 
@@ -58,12 +47,15 @@ where
 }
 
 /// Implement AssetLoader for the CachedLoader.
-impl<Handler, Loader> AssetLoader<Handler> for CachedLoader<Handler, Loader>
+impl<Loader> AssetLoader for CachedLoader<Loader>
 where
-    Handler: AssetCreationHandler,
-    Loader: AssetLoader<Handler>,
+    Loader: AssetLoader,
 {
-    fn load_asset(&self, handler: &mut Handler, identifier: &str) -> Option<AnyHandle<dyn Any>> {
+    fn load_asset(
+        &self,
+        handler: &mut dyn AssetCreationHandler,
+        identifier: &str,
+    ) -> Option<AnyHandle<dyn Any>> {
         let mut cache = self.cache.borrow_mut();
         Some(
             match cache.entry(identifier.into()) {
@@ -77,21 +69,13 @@ where
 
 /// The ToCached trait makes it easy to turn any loader into a cached loader.
 /// Simply invoke to_cached() upon it.
-pub trait ToCached<Handler, T>
-where
-    T: AssetLoader<Handler>,
-    Handler: AssetCreationHandler,
-{
-    fn to_cached(self) -> CachedLoader<Handler, T>;
+pub trait ToCached<T: AssetLoader> {
+    fn to_cached(self) -> CachedLoader<T>;
 }
 
 /// Blanket implementation of ToCached for all asset loaders.
-impl<Handler, T> ToCached<Handler, T> for T
-where
-    T: AssetLoader<Handler>,
-    Handler: AssetCreationHandler,
-{
-    fn to_cached(self) -> CachedLoader<Handler, T> {
+impl<Y: AssetLoader> ToCached<Y> for Y {
+    fn to_cached(self) -> CachedLoader<Y> {
         CachedLoader::new(self)
     }
 }

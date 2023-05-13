@@ -19,8 +19,9 @@ type will work in stable rust.
 ```rust
 use serde::{Serialize, Deserialize};
 use mini_asset_loader::asset::{TaggedJsonAsset, TaggedJsonAssetCreationHandler};
-use mini_asset_loader::loaders::{DirectoryLoader, ToCached};
-use mini_asset_loader::{TypedAssetLoader, boxed_vec};
+use mini_asset_loader::loaders::ToCached;
+use mini_asset_loader::{TypedAssetLoader, asset_loader_vec};
+use std::path::PathBuf;
 
 
 // Creating an asset type is as easy as making a Serializable/Deserializable struct...
@@ -38,9 +39,9 @@ impl TaggedJsonAsset for StringAsset {}
 // ...Then, when we want to *load* assets...
 fn main() {
     // We create our loader setup as usual...
-    let mut loader = boxed_vec![
-        DirectoryLoader::new("assets/"),
-        DirectoryLoader::new("/global_assets/")
+    let mut loader = asset_loader_vec![
+        PathBuf::from("assets/"),
+        PathBuf::from("/global_assets/")
     ].to_cached();
 
     // Make a TaggedJsonAssetCreationHandler...

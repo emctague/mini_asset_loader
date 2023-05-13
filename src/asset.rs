@@ -10,7 +10,7 @@
 //! use serde::{Serialize, Deserialize};
 //! use mini_asset_loader::asset::{TaggedJsonAsset, TaggedJsonAssetCreationHandler};
 //! use mini_asset_loader::loaders::ToCached;
-//! use mini_asset_loader::{TypedAssetLoader, boxed_vec};
+//! use mini_asset_loader::{TypedAssetLoader, asset_loader_vec, AssetLoader};
 //! use std::path::PathBuf;
 //!
 //! // Creating an asset type is as easy as making a Serializable/Deserializable struct...
@@ -27,7 +27,7 @@
 //! // ...Then, when we want to *load* assets...
 //!
 //! // We create our loader setup as usual...
-//! let mut loader = boxed_vec![
+//! let mut loader = asset_loader_vec![
 //!     PathBuf::from("assets/"),
 //!     PathBuf::from("/global_assets/")
 //! ].to_cached();

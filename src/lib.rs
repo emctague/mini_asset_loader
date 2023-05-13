@@ -7,11 +7,9 @@
 //!   with full user control over when unused assets are unloaded. The [loaders::ToCached] trait,
 //!   which is implemented for all loaders, allows you to use `to_cached()` to convert a loader into
 //!   a cached one.
-//! - The [loaders::CombinedLoader] can search multiple nested loaders for a given asset.
-//!   You may also use a simple `Vec<Box<dyn AssetLoader<Handler>>>` for this purpose,
-//!   which is made easier via the provided `boxed_vec!` macro.
-//! - The [loaders::DirectoryLoader] can load assets from a specific path on disk.
-//!   A simple [PathBuf] can serve this purpose as well.
+//! - A simple `Vec<Box<dyn AssetLoader>>` can search multiple loaders and load the first successful
+//!   result, which is made easier via the provided `asset_loader_vec!` macro.
+//! - A [PathBuf] acts as a loader to load assets from a specific path on disk.
 //! - The [loaders::ZipLoader] can load assets from a ZIP file.
 //! - A simple [HashMap] can be used as a loader for assets stored in memory.
 //! These loaders can be composed in various ways to create more advanced behaviour.
@@ -46,7 +44,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 /// An AssetCreationHandler is a delegate that handles the creation (usually deserialization)
@@ -115,37 +112,48 @@ impl AssetCreationHandler for ExtensionMappedAssetCreationHandler {
 /// An AssetLoader loads an asset given its name, with help from an [AssetCreationHandler].
 /// Some AssetLoaders implement special behaviour, such as caching or combining multiple
 /// child loaders.
-pub trait AssetLoader<Handler: AssetCreationHandler> {
+pub trait AssetLoader {
     /// Load an asset with the given identifier.
     ///
     /// Returns None if the asset could not be found or failed to serialize.
-    fn load_asset(&self, handler: &mut Handler, identifier: &str) -> Option<AnyHandle<dyn Any>>;
+    fn load_asset(
+        &self,
+        handler: &mut dyn AssetCreationHandler,
+        identifier: &str,
+    ) -> Option<AnyHandle<dyn Any>>;
 }
 
 /// A simple HashMap can act as a loader for a set of values in memory.
-impl<Handler: AssetCreationHandler> AssetLoader<Handler> for HashMap<String, AnyHandle<dyn Any>> {
-    fn load_asset(&self, _handler: &mut Handler, identifier: &str) -> Option<AnyHandle<dyn Any>> {
+impl AssetLoader for HashMap<String, AnyHandle<dyn Any>> {
+    fn load_asset(
+        &self,
+        _handler: &mut dyn AssetCreationHandler,
+        identifier: &str,
+    ) -> Option<AnyHandle<dyn Any>> {
         self.get(identifier).cloned()
     }
 }
 
-/// A Vec<Box<dyn AssetLoader<Handler>> or similar structure can act as a combined loader over its elements,
+/// A Vec<Box<dyn AssetLoader>> or similar structure can act as a combined loader over its elements,
 /// querying them one by one. The `boxed_vec!` macro can help with this. Prefer this over the use of
 /// a CombinedLoader.
-impl<Handler: AssetCreationHandler, Container, Loader> AssetLoader<Handler> for Vec<Container>
-where
-    Container: Deref<Target = Loader>,
-    Loader: AssetLoader<Handler>,
-{
-    fn load_asset(&self, handler: &mut Handler, identifier: &str) -> Option<AnyHandle<dyn Any>> {
+impl AssetLoader for Vec<Box<dyn AssetLoader>> {
+    fn load_asset(
+        &self,
+        handler: &mut dyn AssetCreationHandler,
+        identifier: &str,
+    ) -> Option<AnyHandle<dyn Any>> {
         self.iter().find_map(|x| x.load_asset(handler, identifier))
     }
 }
 
 /// A PathBuf can act as a loader for files relative to the directory it points to.
-/// This is identical to the behaviour of a [loaders::DirectoryLoader].
-impl<Handler: AssetCreationHandler> AssetLoader<Handler> for PathBuf {
-    fn load_asset(&self, handler: &mut Handler, identifier: &str) -> Option<AnyHandle<dyn Any>> {
+impl AssetLoader for PathBuf {
+    fn load_asset(
+        &self,
+        handler: &mut dyn AssetCreationHandler,
+        identifier: &str,
+    ) -> Option<AnyHandle<dyn Any>> {
         let mut new_path: PathBuf = self.to_path_buf();
         new_path.push(identifier);
 
@@ -160,40 +168,40 @@ impl<Handler: AssetCreationHandler> AssetLoader<Handler> for PathBuf {
     }
 }
 
-/// Allows for easy creation of a vector of boxed values.
+/// Allows for easy creation of a vector of boxed asset loaders.
 /// Use it the same as you would use `vec!`. Each element will be passed through `Box::new`.
 #[macro_export]
-macro_rules! boxed_vec {
+macro_rules! asset_loader_vec {
     () => {
-        vec![]
+        Vec::<Box<dyn AssetLoader>>::new()
     };
     ($($x:expr),+ $(,)?) => {
-        vec![$(Box::new($x)),+]
+        vec![$(Box::new($x) as Box<dyn AssetLoader>),+]
     };
 }
 
 /// A TypedAssetLoader is a simple helper for AssetLoaders that can downcast
 /// them into a handle matching their type.
-pub trait TypedAssetLoader<Handler: AssetCreationHandler> {
+pub trait TypedAssetLoader {
     /// Load an asset by its identifier, trying to interpret it as the given type.
     ///
     /// Returns None if the asset could not be found, failed to serialize, or was not of the
     /// correct type.
     fn load_typed_asset<T: Any>(
         &self,
-        handler: &mut Handler,
+        handler: &mut dyn AssetCreationHandler,
         identifier: &str,
     ) -> Option<AnyHandle<T>>;
 }
 
 /// Catch-all TypedAssetLoader implementation for any AssetLoader.
-impl<T, Handler: AssetCreationHandler> TypedAssetLoader<Handler> for T
+impl<T> TypedAssetLoader for T
 where
-    T: AssetLoader<Handler>,
+    T: AssetLoader,
 {
     fn load_typed_asset<Y: Any>(
         &self,
-        handler: &mut Handler,
+        handler: &mut dyn AssetCreationHandler,
         identifier: &str,
     ) -> Option<AnyHandle<Y>> {
         let result = self.load_asset(handler, identifier)?;
